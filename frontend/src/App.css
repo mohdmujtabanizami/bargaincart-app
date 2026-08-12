@@ -602,3 +602,63 @@ body {
     border-radius: 4px !important;
   }
 }
+/* Mobile Navbar 2-Row Perfect Layout */
+@media (max-width: 768px) {
+  .navbar {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding: 10px !important;
+  }
+
+  /* Pehli Line: Menu (3 lines) + Logo + Search bar */
+  .navbar-top-row, 
+  .navbar > div:first-child {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  /* Search bar ko pehli line mein adjust karna */
+  .navbar form {
+    flex: 1 !important;
+    margin: 0 !important;
+    display: flex !important;
+    max-width: none !important;
+  }
+
+  .navbar input {
+    width: 100% !important;
+    height: 36px !important;
+    font-size: 13px !important;
+    padding: 6px 10px !important;
+  }
+
+  .navbar button[type="submit"] {
+    height: 36px !important;
+    padding: 0 10px !important;
+  }
+
+  /* Dusri Line: Dark Mode, Wishlist, aur Cart balanced spacing ke sath */
+  .navbar-bottom-row,
+  .navbar > div:nth-child(2),
+  .navbar .nav-links-container {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  /* Buttons aur icons ki padding aur spacing fix */
+  .navbar button, 
+  .navbar .icon-btn {
+    flex: 1 !important;
+    justify-content: center !important;
+    padding: 6px 4px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+}

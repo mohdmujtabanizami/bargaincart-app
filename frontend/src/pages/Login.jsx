@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  signInWithRedirect, 
+  signInWithPopup, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   updateProfile 
@@ -25,14 +25,22 @@ function Login() {
   const [email, setEmail] = useState('');
   const [authError, setAuthError] = useState('');
 
-  // 1. Google Sign-In (Updated with signInWithRedirect for mobile/tablet reliability)
+  // 1. Google Sign-In with Popup (Best and smooth for mobile & desktop)
   const handleGoogleSignIn = async () => {
     try {
       setAuthError('');
-      await signInWithRedirect(auth, googleProvider);
+      const res = await signInWithPopup(auth, googleProvider);
+      alert(`Welcome, ${res.user.displayName || 'User'}! 🎉`);
+      navigate('/');
     } catch (error) {
       console.error("Google Sign-In Error:", error);
-      setAuthError("Google Login failed: " + error.message);
+      if (error.code === 'auth/popup-closed-by-user') {
+        setAuthError("Sign-in popup was closed before completion.");
+      } else if (error.code === 'auth/unauthorized-domain') {
+        setAuthError("This domain is not authorized in Firebase Console.");
+      } else {
+        setAuthError("Google Login failed: " + error.message);
+      }
     }
   };
 
@@ -67,7 +75,7 @@ function Login() {
     }
   };
 
-  // 3. Direct Sign In (Email / Phone & Password with strict "Invalid password" handling)
+  // 3. Direct Sign In
   const handleLogin = async (e) => {
     e.preventDefault();
     setAuthError('');
@@ -77,7 +85,6 @@ function Login() {
     }
 
     try {
-      // Handle both Email or Mobile number identifier
       const loginEmail = identifier.includes('@') ? identifier : `${identifier}@bargaincart.com`;
       const res = await signInWithEmailAndPassword(auth, loginEmail, password);
       alert(`Welcome back, ${res.user.displayName || identifier}! 🚀`);
@@ -106,7 +113,7 @@ function Login() {
         boxShadow: '0 2px 5px rgba(0,0,0,0.1)' 
       }}>
         
-        {/* Top Tabs: Sign In vs Register */}
+        {/* Top Tabs */}
         <div style={{ display: 'flex', marginBottom: '20px', borderBottom: isDarkMode ? '2px solid #444' : '2px solid #eee' }}>
           <button 
             type="button"
@@ -140,7 +147,6 @@ function Login() {
         )}
 
         {!isSignup ? (
-          // Sign In Form
           <form onSubmit={handleLogin}>
             <h2 style={{ fontWeight: '500', marginBottom: '15px', fontSize: '24px', color: isDarkMode ? '#fff' : '#111' }}>Sign in</h2>
             
@@ -175,11 +181,9 @@ function Login() {
             </button>
           </form>
         ) : (
-          // Register Form
           <form onSubmit={handleRegister}>
             <h2 style={{ fontWeight: '500', marginBottom: '15px', fontSize: '24px', color: isDarkMode ? '#fff' : '#111' }}>Create Account</h2>
             
-            {/* First Name & Middle Name */}
             <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '3px', color: isDarkMode ? '#ccc' : '#000' }}>First Name *</label>
@@ -204,7 +208,6 @@ function Login() {
               </div>
             </div>
 
-            {/* Last Name */}
             <div style={{ marginBottom: '12px' }}>
               <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '3px', color: isDarkMode ? '#ccc' : '#000' }}>Last Name *</label>
               <input 
@@ -217,7 +220,6 @@ function Login() {
               />
             </div>
 
-            {/* Mobile Number */}
             <div style={{ marginBottom: '12px' }}>
               <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '3px', color: isDarkMode ? '#ccc' : '#000' }}>Mobile Number *</label>
               <input 
@@ -232,7 +234,6 @@ function Login() {
               />
             </div>
 
-            {/* Email Address */}
             <div style={{ marginBottom: '12px' }}>
               <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '3px', color: isDarkMode ? '#ccc' : '#000' }}>Email address *</label>
               <input 
@@ -245,7 +246,6 @@ function Login() {
               />
             </div>
 
-            {/* Password */}
             <div style={{ marginBottom: '20px' }}>
               <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '3px', color: isDarkMode ? '#ccc' : '#000' }}>Password *</label>
               <input 
