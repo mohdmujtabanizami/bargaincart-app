@@ -22,7 +22,7 @@ function AdminDashboard() {
   // Modal State for Viewing KYC ID Image
   const [selectedIdImage, setSelectedIdImage] = useState(null);
 
-  // Admin Settings Editable Fields - Fixed naming to setAdminSettings
+  // Admin Settings Editable Fields
   const [adminSettings, setAdminSettings] = useState({
     siteName: 'BargainCart Live E-Commerce',
     adminEmail: 'bargaincart@admin.com',
@@ -31,12 +31,12 @@ function AdminDashboard() {
     autoApproveRentals: true
   });
 
-  // Helper function to accurately decode timestamp from Firebase Push ID or saved date string
+  // Helper function to get exact real timestamp (Prioritizes saved date with time, decodes Firebase Push ID if time missing)
   const getAccurateTimestamp = (key, savedDate) => {
-    if (savedDate && !savedDate.includes('NaN') && !savedDate.includes('58583') && !savedDate.includes('7631') && savedDate !== 'N/A') {
+    if (savedDate && savedDate.includes(':') && !savedDate.includes('58583') && !savedDate.includes('7631') && savedDate !== 'N/A') {
       return savedDate;
     }
-    // Firebase push ID timestamp decoder
+    // Decode exact milliseconds from Firebase push ID if savedDate doesn't have time
     if (key && key.startsWith('-')) {
       const PUSH_CHARS = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
       let timestamp = 0;
@@ -45,7 +45,7 @@ function AdminDashboard() {
       }
       return new Date(timestamp).toLocaleString();
     }
-    return new Date().toLocaleString();
+    return savedDate || new Date().toLocaleString();
   };
 
   // Fetch real-time data from Firebase
@@ -93,7 +93,7 @@ function AdminDashboard() {
     fetchAdminData();
   }, []);
 
-  // Admin cancel rental order handler
+  // Admin cancel rental order handler - fully active and updates database instantly
   const handleAdminCancel = async (dbKey, userId) => {
     if (!window.confirm("Are you sure you want to cancel this rental order due to invalid/incorrect KYC ID?")) return;
     try {
@@ -461,7 +461,7 @@ function AdminDashboard() {
                 </div>
 
                 <div style={{ padding: '15px', backgroundColor: isDarkMode ? '#252525' : '#f8fafc', borderRadius: '8px', border: '1px solid #444', marginTop: '10px' }}>
-                  <p style={{ margin: '0 0 5px 0', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}><FaShieldAlt color="#10b981" /> Live DatabaseStatus</p>
+                  <p style={{ margin: '0 0 5px 0', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}><FaShieldAlt color="#10b981" /> Live Database Status</p>
                   <p style={{ margin: 0, fontSize: '13px', color: '#10b981' }}>✔ Fully Connected to Firebase Realtime Database</p>
                 </div>
 
