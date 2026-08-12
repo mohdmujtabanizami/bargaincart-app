@@ -31,21 +31,12 @@ function AdminDashboard() {
     autoApproveRentals: true
   });
 
-  // Helper function to get exact real timestamp (Prioritizes saved date with time, decodes Firebase Push ID if time missing)
-  const getAccurateTimestamp = (key, savedDate) => {
-    if (savedDate && savedDate.includes(':') && !savedDate.includes('58583') && !savedDate.includes('7631') && savedDate !== 'N/A') {
+  // Safe Timestamp Helper to prevent incorrect or fake future years
+  const getAccurateTimestamp = (savedDate) => {
+    if (savedDate && typeof savedDate === 'string' && !savedDate.includes('5593') && !savedDate.includes('58583') && !savedDate.includes('7631') && savedDate !== 'N/A') {
       return savedDate;
     }
-    // Decode exact milliseconds from Firebase push ID if savedDate doesn't have time
-    if (key && key.startsWith('-')) {
-      const PUSH_CHARS = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
-      let timestamp = 0;
-      for (let i = 1; i < 9; i++) {
-        timestamp = timestamp * 64 + PUSH_CHARS.indexOf(key[i]);
-      }
-      return new Date(timestamp).toLocaleString();
-    }
-    return savedDate || new Date().toLocaleString();
+    return new Date().toLocaleString();
   };
 
   // Fetch real-time data from Firebase
@@ -59,7 +50,7 @@ function AdminDashboard() {
           
           const ordArray = Object.keys(ordData).map(key => {
             const item = ordData[key];
-            const formattedDate = getAccurateTimestamp(key, item.date);
+            const formattedDate = getAccurateTimestamp(item.date);
             return { dbKey: key, id: key, ...item, formattedDate };
           }).reverse();
           
@@ -93,7 +84,7 @@ function AdminDashboard() {
     fetchAdminData();
   }, []);
 
-  // Admin cancel rental order handler - fully active and updates database instantly
+  // Admin cancel rental order handler - Fully active for rejecting bad KYC IDs
   const handleAdminCancel = async (dbKey, userId) => {
     if (!window.confirm("Are you sure you want to cancel this rental order due to invalid/incorrect KYC ID?")) return;
     try {
@@ -353,22 +344,22 @@ function AdminDashboard() {
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead style={{ backgroundColor: isDarkMode ? '#222' : '#f8fafc', color: '#94a3b8', fontSize: '12px' }}>
                   <tr>
-                    <th style={{ padding: '15px 20px' }}>Rental ID</th>
-                    <th style={{ padding: '15px 20px' }}>Item Title</th>
-                    <th style={{ padding: '15px 20px' }}>Rental Date & Time</th>
-                    <th style={{ padding: '15px 20px' }}>KYC Details</th>
-                    <th style={{ padding: '15px 20px' }}>Rental Amount</th>
-                    <th style={{ padding: '15px 20px' }}>Status</th>
-                    <th style={{ padding: '15px 20px' }}>Action</th>
+                    <th style={{ padding: '15px 15px' }}>Rental ID</th>
+                    <th style={{ padding: '15px 15px' }}>Item Title</th>
+                    <th style={{ padding: '15px 15px' }}>Rental Date</th>
+                    <th style={{ padding: '15px 15px' }}>KYC Details</th>
+                    <th style={{ padding: '15px 15px' }}>Rental Amount</th>
+                    <th style={{ padding: '15px 15px' }}>Status</th>
+                    <th style={{ padding: '15px 15px' }}>Action</th>
                   </tr>
                 </thead>
                 <tbody style={{ fontSize: '14px', color: isDarkMode ? '#e2e8f0' : '#334155' }}>
                   {rentalsList.length > 0 ? rentalsList.map((r, i) => (
                     <tr key={i} style={{ borderBottom: '1px solid #333' }}>
-                      <td style={{ padding: '16px 20px', fontWeight: 'bold' }}>{r.id}</td>
-                      <td style={{ padding: '16px 20px' }}>{r.productTitle || 'Rental Product'}</td>
-                      <td style={{ padding: '16px 20px', fontSize: '13px', color: '#94a3b8' }}>{r.formattedDate}</td>
-                      <td style={{ padding: '16px 20px' }}>
+                      <td style={{ padding: '16px 15px', fontWeight: 'bold', fontSize: '12px' }}>{r.id}</td>
+                      <td style={{ padding: '16px 15px' }}>{r.productTitle || 'Rental Product'}</td>
+                      <td style={{ padding: '16px 15px', fontSize: '13px', color: '#94a3b8' }}>{r.formattedDate}</td>
+                      <td style={{ padding: '16px 15px' }}>
                         <div style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                           <FaIdCard color="#0ea5e9" /> {r.kycForm?.idType || 'Government ID'}: 
                           {r.kycForm?.idPhoto ? (
@@ -383,17 +374,17 @@ function AdminDashboard() {
                           )}
                         </div>
                       </td>
-                      <td style={{ padding: '16px 20px', fontWeight: 'bold', color: '#0ea5e9' }}>₹{r.amount || 0}</td>
-                      <td style={{ padding: '16px 20px' }}>
+                      <td style={{ padding: '16px 15px', fontWeight: 'bold', color: '#0ea5e9' }}>₹{r.amount || 0}</td>
+                      <td style={{ padding: '16px 15px' }}>
                         <span style={{ backgroundColor: r.status?.includes('Cancelled') ? '#fee2e2' : '#e0f2fe', color: r.status?.includes('Cancelled') ? '#dc2626' : '#0369a1', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold' }}>
                           {r.status || 'Active Rental'}
                         </span>
                       </td>
-                      <td style={{ padding: '16px 20px' }}>
+                      <td style={{ padding: '16px 15px' }}>
                         {r.status !== 'Cancelled by Admin' && (
                           <button 
                             onClick={() => handleAdminCancel(r.dbKey, r.userId)}
-                            style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap' }}>
                             <FaTrash /> Cancel
                           </button>
                         )}
