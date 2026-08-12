@@ -500,3 +500,29 @@ body {
     grid-template-columns: 1fr 1fr !important; /* Tablet par 2 column */
   }
 }
+/* Mobile Navbar Fix */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 8px 10px !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+  }
+  
+  /* Search bar mobile par chota ho jaye taaki baaki icons jagah le sakein */
+  .navbar form {
+    margin: 0 5px !important;
+    max-width: none !important;
+    flex: 1 !important;
+  }
+  
+  .navbar input {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    height: 34px !important;
+  }
+  
+  .navbar button[type="submit"] {
+    padding: 0 10px !important;
+    height: 34px !important;
+  }
+}

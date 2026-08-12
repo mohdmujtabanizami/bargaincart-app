@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  signInWithPopup, 
+  signInWithRedirect, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   updateProfile 
@@ -25,16 +25,14 @@ function Login() {
   const [email, setEmail] = useState('');
   const [authError, setAuthError] = useState('');
 
-  // 1. Google Sign-In
+  // 1. Google Sign-In (Updated with signInWithRedirect for mobile/tablet reliability)
   const handleGoogleSignIn = async () => {
     try {
       setAuthError('');
-      const res = await signInWithPopup(auth, googleProvider);
-      alert(`Welcome, ${res.user.displayName}! 🎉`);
-      navigate('/');
+      await signInWithRedirect(auth, googleProvider);
     } catch (error) {
       console.error("Google Sign-In Error:", error);
-      setAuthError("Google Login failed.");
+      setAuthError("Google Login failed: " + error.message);
     }
   };
 
