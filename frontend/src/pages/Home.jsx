@@ -26,7 +26,6 @@ function Home({ activeTab, searchQuery = '', isPremium }) {
   const [checkoutStep, setCheckoutStep] = useState('address'); 
   const [checkoutItem, setCheckoutItem] = useState(null);
   
-  // Replaced hardcoded address with empty state for dynamic fetching
   const [checkoutAddresses, setCheckoutAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
@@ -48,7 +47,6 @@ function Home({ activeTab, searchQuery = '', isPremium }) {
         setWalletBalance(snapshot.exists() ? snapshot.val() : 0);
       });
 
-      // Fetch user's saved addresses dynamically from Firebase
       const addressesRef = ref(db, `users/${currentUser.uid}/addresses`);
       get(addressesRef).then((snapshot) => {
         if (snapshot.exists()) {
@@ -63,7 +61,7 @@ function Home({ activeTab, searchQuery = '', isPremium }) {
           }
         } else {
           setCheckoutAddresses([]);
-          setIsAddingAddress(true); // Automatically open add address form if no address exists
+          setIsAddingAddress(true); 
         }
       }).catch((error) => {
         console.error("Error fetching addresses:", error);
@@ -264,10 +262,13 @@ function Home({ activeTab, searchQuery = '', isPremium }) {
             <p style={{ fontSize: '12px', color: '#007185', fontWeight: 'bold' }}>{product.boughtCount.toLocaleString()}+ bought recently</p>
           )}
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '5px' }}>
-              {[...Array(5)].map((_, i) => <FaStar key={i} color={i < Math.floor(product.rating) ? '#ffa41c' : '#ccc'} size={12} />)}
-              <span style={{ fontSize: '12px', marginLeft: '5px' }}>({product.reviewsCount})</span>
-          </div>
+          {/* Rating aur Reviews sirf tab dikhein jab product Coming Soon na ho */}
+          {!isComingSoon && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '5px' }}>
+                {[...Array(5)].map((_, i) => <FaStar key={i} color={i < Math.floor(product.rating) ? '#ffa41c' : '#ccc'} size={12} />)}
+                <span style={{ fontSize: '12px', marginLeft: '5px' }}>({product.reviewsCount})</span>
+            </div>
+          )}
 
           <div style={{ fontSize: '12px', fontWeight: 'bold', color: stockTextColor, marginBottom: '10px' }}>
             {stockText}

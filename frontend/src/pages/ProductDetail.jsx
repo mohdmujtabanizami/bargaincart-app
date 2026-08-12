@@ -131,7 +131,6 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
         setWalletBalance(snapshot.exists() ? snapshot.val() : 0);
       });
 
-      // Fetch user's saved addresses dynamically from Firebase
       const addressesRef = ref(db, `users/${currentUser.uid}/addresses`);
       get(addressesRef).then((snapshot) => {
         if (snapshot.exists()) {
@@ -186,7 +185,6 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatMessages, showBargainModal]);
 
-  // Open negotiation chatbot when Buy Now is clicked
   const handleBuyNowClick = () => {
     if (isOutOfStock || isComingSoon) return;
     const currentPriceToUse = dealAccepted ? negotiatedPrice : finalPrice;
@@ -315,7 +313,6 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
     }
   };
 
-  // Open KYC form first when Rent Now is clicked
   const handleRentNowClick = () => {
     if (isOutOfStock || isComingSoon) return;
     setRentStep('kyc');
@@ -418,16 +415,17 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
     <div key={id} style={{ backgroundColor: isDarkMode ? '#121212' : '#f4f4f4', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       
       {/* MAIN CONTENT */}
-      <div style={{ flex: 1, maxWidth: '1200px', margin: '20px auto', padding: '20px', backgroundColor: isDarkMode ? '#1e1e1e' : '#fff', color: isDarkMode ? '#fff' : '#000', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+      <div style={{ flex: 1, maxWidth: '1200px', margin: '20px auto', padding: '20px', backgroundColor: isDarkMode ? '#1e1e1e' : '#fff', color: isDarkMode ? '#fff' : '#000', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', width: '95%', boxSizing: 'border-box' }}>
         
         <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#007185', cursor: 'pointer', marginBottom: '20px', fontWeight: 'bold' }}>← Back to Store</button>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr', gap: '30px' }}>
+        {/* Responsive Grid Container */}
+        <div className="product-detail-grid" style={{ display: 'grid', gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : '1fr 1.2fr 1fr', gap: '30px' }}>
           
           {/* DYNAMIC IMAGE GALLERY */}
           <div>
-            <div style={{ border: isDarkMode ? '1px solid #444' : '1px solid #ddd', borderRadius: '8px', height: '350px', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '15px', padding: '10px', backgroundColor: '#fff' }}>
-              <img src={activeStyle.image} alt={activeStyle.title} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
+            <div style={{ border: isDarkMode ? '1px solid #444' : '1px solid #ddd', borderRadius: '8px', minHeight: '300px', height: '350px', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '15px', padding: '10px', backgroundColor: '#fff', width: '100%', boxSizing: 'border-box' }}>
+              <img src={activeStyle.image} alt={activeStyle.title} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
             </div>
           </div>
 
@@ -439,10 +437,12 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
               <p style={{ fontSize: '14px', color: '#007185', fontWeight: 'bold', marginBottom: '6px' }}>{product.boughtCount.toLocaleString()}+ people bought this recently</p>
             )}
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-              <span style={{ color: '#ffa41c', fontWeight: 'bold' }}>{product.rating} <FaStar color="#ffa41c" /></span>
-              <span style={{ color: '#007185', fontSize: '14px' }}>{product.reviewsCount} ratings</span>
-            </div>
+            {!isComingSoon && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                <span style={{ color: '#ffa41c', fontWeight: 'bold' }}>{product.rating} <FaStar color="#ffa41c" /></span>
+                <span style={{ color: '#007185', fontSize: '14px' }}>{product.reviewsCount} ratings</span>
+              </div>
+            )}
 
             {/* Stock Alert */}
             <div style={{ fontSize: '14px', fontWeight: isLowStock ? 'bold' : '500', color: stockTextColor, marginBottom: '15px' }}>
@@ -654,8 +654,8 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
           </div>
         )}
 
-        {/* Reviews Section */}
-        {product.reviews && product.reviews.length > 0 && (
+        {/* Customer Reviews & Ratings - Hide if Coming Soon */}
+        {!isComingSoon && product.reviews && product.reviews.length > 0 && (
           <div style={{ marginTop: '40px', borderTop: isDarkMode ? '1px solid #444' : '1px solid #eee', paddingTop: '30px' }}>
             <h2 style={{ fontSize: '20px', marginBottom: '20px', color: isDarkMode ? '#fff' : '#111' }}>Customer Reviews & Ratings</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
@@ -667,11 +667,6 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
                     <div style={{ color: '#ffa41c', fontSize: '12px', marginBottom: '8px' }}>{[...Array(5)].map((_, i) => <span key={i} style={{ color: i < rev.rating ? '#ffa41c' : '#ccc' }}>★</span>)}</div>
                     <p style={{ fontSize: '13px', fontStyle: 'italic', marginBottom: '12px' }}>"{rev.comment}"</p>
                   </div>
-                  {rev.reviewImg && (
-                    <div style={{ width: '100%', height: '120px', borderRadius: '4px', overflow: 'hidden', border: isDarkMode ? '1px solid #444' : '1px solid #ddd', backgroundColor: '#fff' }}>
-                      <img src={rev.reviewImg} alt="Review" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
@@ -759,7 +754,6 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
                 </>
               )}
 
-              {/* Payment Step with Wallet & Gift Card */}
               {checkoutStep === 'payment' && (
                 <form onSubmit={handlePaymentSubmit} autoComplete="off">
                   <h3 style={{ fontSize: '18px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}><FaCreditCard color="#007185"/> Choose Payment Method</h3>
@@ -772,7 +766,6 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
                     </p>
                   </div>
 
-                  {/* BargainCart Cash & Gift Card Wallet Option */}
                   <div style={{ border: '2px solid #9b51e0', borderRadius: '8px', padding: '15px', marginBottom: '20px', backgroundColor: isDarkMode ? '#221a2d' : '#fcf5ff' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 'bold', color: '#9b51e0' }}>
                       <input 
@@ -1114,7 +1107,6 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
                 </form>
               )}
 
-              {/* Rent Payment Step with Wallet & Gift Card & Auto-Slash */}
               {rentStep === 'payment' && (
                 <form onSubmit={handleRentPaymentSubmit} autoComplete="off">
                   <h3 style={{ fontSize: '18px', marginBottom: '15px' }}>Step 3: Payment (UPI / Card / Gift Card)</h3>
@@ -1130,7 +1122,6 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
                     </p>
                   </div>
 
-                  {/* BargainCart Cash & Gift Card Wallet Option for Rent */}
                   <div style={{ border: '2px solid #9b51e0', borderRadius: '8px', padding: '15px', marginBottom: '20px', backgroundColor: isDarkMode ? '#221a2d' : '#fcf5ff' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 'bold', color: '#9b51e0' }}>
                       <input 
@@ -1180,7 +1171,6 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
                 </form>
               )}
 
-              {/* Step 4: Success Message */}
               {rentStep === 'success' && (
                 <div style={{ textAlign: 'center', padding: '30px 10px' }}>
                   <FaCheckCircle color="#007600" size={60} style={{ marginBottom: '15px' }} />

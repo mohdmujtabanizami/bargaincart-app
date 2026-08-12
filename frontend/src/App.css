@@ -481,151 +481,80 @@ body {
   box-sizing: border-box;
 }
 
-/* Mobile Devices */
-@media (max-width: 768px) {
-  body {
-    overflow-x: hidden; /* Screen ko sideways scroll hone se rokega */
-  }
-  .navbar {
-    padding: 0 10px !important;
-  }
-  .product-grid {
-    grid-template-columns: 1fr !important; /* Mobile par 1 column dikhayega */
-  }
+/* ==========================================
+   DESKTOP & DEFAULT VIEW (Laptop / PC)
+   ========================================== */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
 }
 
-/* Tablet Devices */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+/* ==========================================
+   TABLET DEVICES (769px to 1024px)
+   ========================================== */
 @media (min-width: 769px) and (max-width: 1024px) {
-  .product-grid {
-    grid-template-columns: 1fr 1fr !important; /* Tablet par 2 column */
-  }
-}
-/* Mobile Navbar Fix */
-@media (max-width: 768px) {
-  .navbar {
-    padding: 8px 10px !important;
-    flex-wrap: nowrap !important;
-    gap: 8px !important;
+  body {
+    overflow-x: hidden;
   }
   
-  /* Search bar mobile par chota ho jaye taaki baaki icons jagah le sakein */
-  .navbar form {
-    margin: 0 5px !important;
-    max-width: none !important;
-    flex: 1 !important;
-  }
-  
-  .navbar input {
-    padding: 6px 10px !important;
-    font-size: 12px !important;
-    height: 34px !important;
-  }
-  
-  .navbar button[type="submit"] {
-    padding: 0 10px !important;
-    height: 34px !important;
-  }
-}
-/* Mobile Navbar & Hamburger Menu Fix */
-@media (max-width: 768px) {
   .navbar {
     display: flex !important;
-    justify-content: space-between !important;
+    flex-direction: row !important;
     align-items: center !important;
-    padding: 8px 12px !important;
+    justify-content: space-between !important;
+    padding: 10px 15px !important;
     flex-wrap: nowrap !important;
+    gap: 10px !important;
   }
 
-  /* Hamburger Menu Icon ko mobile par hamesha dikhane ke liye */
-  .menu-icon, 
-  .navbar svg, 
-  button[aria-label="Menu"] {
-    display: inline-block !important;
-    visibility: visible !important;
-    font-size: 24px !important;
-    cursor: pointer !important;
-    color: inherit;
-  }
-
-  /* Search bar ko mobile par adjust karna taki jagah bani rahe */
-  .navbar form {
-    flex: 1 !important;
-    margin: 0 8px !important;
-    max-width: none !important;
-  }
-
-  .navbar input {
-    width: 100% !important;
-    font-size: 13px !important;
-    padding: 6px 10px !important;
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
   }
 }
-/* Mobile Navbar 2-Row Fix for Search Bar */
+
+/* ==========================================
+   MOBILE DEVICES (Max Width: 768px) - 2 ROW LAYOUT
+   ========================================== */
 @media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Navbar Container as Column */
   .navbar {
     display: flex !important;
     flex-direction: column !important;
-    align-items: stretch !important;
-    padding: 8px 10px !important;
     gap: 8px !important;
+    padding: 8px 10px !important;
+    width: 100% !important;
   }
 
-  /* Pehli row: Menu, Logo, Dark mode, Wishlist, Cart aapas mein paas-paas */
+  /* ------------------------------------------
+     ROW 1: Menu Icon + Logo + Search Bar
+     ------------------------------------------ */
   .navbar-top-row, 
   .navbar > div:first-child {
     display: flex !important;
-    justify-content: space-between !important;
+    flex-direction: row !important;
     align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
     gap: 6px !important;
   }
 
-  /* Icons aur buttons ke beech ka extra gap kam karna */
-  .navbar button, 
-  .navbar .icon-btn,
-  .navbar svg {
-    margin: 0 !important;
-    padding: 4px !important;
-  }
-
-  /* Search bar ko dusri row mein poora bada aur saaf dikhana */
-  .navbar form {
-    width: 100% !important;
-    margin: 0 !important;
-    display: flex !important;
-  }
-
-  .navbar input {
-    width: 100% !important;
-    height: 38px !important;
-    font-size: 14px !important;
-    padding: 8px 12px !important;
-    border-radius: 4px !important;
-  }
-}
-/* Mobile Navbar 2-Row Perfect Layout */
-@media (max-width: 768px) {
-  .navbar {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 10px !important;
-    padding: 10px !important;
-  }
-
-  /* Pehli Line: Menu (3 lines) + Logo + Search bar */
-  .navbar-top-row, 
-  .navbar > div:first-child {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 8px !important;
-    width: 100% !important;
-  }
-
-  /* Search bar ko pehli line mein adjust karna */
+  /* Search Bar Form in Row 1 */
   .navbar form {
     flex: 1 !important;
-    margin: 0 !important;
     display: flex !important;
+    margin: 0 !important;
     max-width: none !important;
   }
 
@@ -634,29 +563,153 @@ body {
     height: 36px !important;
     font-size: 13px !important;
     padding: 6px 10px !important;
+    border-radius: 4px 0 0 4px !important;
   }
 
   .navbar button[type="submit"] {
     height: 36px !important;
     padding: 0 10px !important;
+    border-radius: 0 4px 4px 0 !important;
   }
 
-  /* Dusri Line: Dark Mode, Wishlist, aur Cart balanced spacing ke sath */
+  /* ------------------------------------------
+     ROW 2: Dark Mode + Wishlist + Cart
+     ------------------------------------------ */
   .navbar-bottom-row,
   .navbar > div:nth-child(2),
   .navbar .nav-links-container {
     display: flex !important;
+    flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
     width: 100% !important;
     gap: 8px !important;
   }
 
-  /* Buttons aur icons ki padding aur spacing fix */
+  /* Buttons & Icons Styling for Row 2 */
   .navbar button, 
-  .navbar .icon-btn {
+  .navbar .icon-btn,
+  .navbar a {
     flex: 1 !important;
+    display: flex !important;
     justify-content: center !important;
+    align-items: center !important;
+    padding: 6px 4px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+    border-radius: 4px !important;
+  }
+
+  /* Product Grid for Mobile */
+  .product-grid {
+    grid-template-columns: 1fr !important;
+    gap: 15px !important;
+    padding: 10px !important;
+  }
+}
+/* ==========================================
+   1. LAPTOP & DESKTOP (Single Line Navbar)
+   ========================================== */
+.navbar {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 20px !important;
+  flex-wrap: nowrap !important;
+  gap: 15px !important;
+}
+
+/* ==========================================
+   2. TABLET DEVICES (769px to 1024px) - Single Line
+   ========================================== */
+@media (min-width: 769px) and (max-width: 1024px) {
+  body {
+    overflow-x: hidden;
+  }
+  
+  .navbar {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 15px !important;
+    flex-wrap: nowrap !important;
+    gap: 10px !important;
+  }
+
+  .navbar form {
+    flex: 1 !important;
+    max-width: 400px !important;
+  }
+}
+
+/* ==========================================
+   3. MOBILE DEVICES (Max Width: 768px) - 2 Rows
+   ========================================== */
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Navbar Container as Column for Mobile */
+  .navbar {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 8px 10px !important;
+    width: 100% !important;
+  }
+
+  /* Row 1: Menu Icon + Logo + Search Bar */
+  .navbar-top-row, 
+  .navbar > div:first-child {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 6px !important;
+  }
+
+  .navbar form {
+    flex: 1 !important;
+    display: flex !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  .navbar input {
+    width: 100% !important;
+    height: 36px !important;
+    font-size: 13px !important;
+    padding: 6px 10px !important;
+  }
+
+  .navbar button[type="submit"] {
+    height: 36px !important;
+    padding: 0 10px !important;
+  }
+
+  /* Row 2: Dark Mode + Wishlist + Cart */
+  .navbar-bottom-row,
+  .navbar > div:nth-child(2),
+  .navbar .nav-links-container {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .navbar button, 
+  .navbar .icon-btn,
+  .navbar a {
+    flex: 1 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
     padding: 6px 4px !important;
     font-size: 12px !important;
     white-space: nowrap !important;
