@@ -22,7 +22,7 @@ function AdminDashboard() {
   // Modal State for Viewing KYC ID Image
   const [selectedIdImage, setSelectedIdImage] = useState(null);
 
-  // Admin Settings Editable Fields (Email & App Name Read-Only / Non-Editable)
+  // Admin Settings Editable Fields
   const [adminSettings, setAdminSettings] = useState({
     siteName: 'BargainCart Live E-Commerce',
     adminEmail: 'bargaincart@admin.com',
@@ -55,7 +55,8 @@ function AdminDashboard() {
               id: key,
               email: userNode.email || userNode.profile?.email || 'bargaincart@user.com',
               fullName: userNode.profile?.fullName || userNode.displayName || 'BargainCart User',
-              phone: userNode.profile?.phone || userNode.phone || '7566952724',
+              // Fixed: Removed hardcoded phone fallback, now shows N/A if signed up via Google without phone
+              phone: userNode.profile?.phone || userNode.phone || 'N/A',
               walletBalance: userNode.walletBalance || 0,
               isPremium: userNode.isPremium || false
             };
@@ -274,7 +275,7 @@ function AdminDashboard() {
                     <tr key={i} style={{ borderBottom: '1px solid #333' }}>
                       <td style={{ padding: '16px 20px', fontWeight: 'bold', fontSize: '12px' }}>{ord.id}</td>
                       <td style={{ padding: '16px 20px' }}>{ord.productTitle || 'Product'}</td>
-                      <td style={{ padding: '16px 20px' }}>{ord.date || '11 August 2026'}</td>
+                      <td style={{ padding: '16px 20px' }}>{ord.date || 'N/A'}</td>
                       <td style={{ padding: '16px 20px', fontWeight: 'bold', color: '#10b981' }}>₹{ord.amount || 0}</td>
                       <td style={{ padding: '16px 20px' }}>
                         <span style={{ backgroundColor: ord.status?.includes('Cancelled') ? '#fee2e2' : '#dcfce7', color: ord.status?.includes('Cancelled') ? '#dc2626' : '#16a34a', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold' }}>
@@ -331,6 +332,7 @@ function AdminDashboard() {
                   <tr>
                     <th style={{ padding: '15px 20px' }}>Rental ID</th>
                     <th style={{ padding: '15px 20px' }}>Item Title</th>
+                    <th style={{ padding: '15px 20px' }}>Rental Date</th>
                     <th style={{ padding: '15px 20px' }}>KYC Details</th>
                     <th style={{ padding: '15px 20px' }}>Rental Amount</th>
                     <th style={{ padding: '15px 20px' }}>Status</th>
@@ -342,6 +344,7 @@ function AdminDashboard() {
                     <tr key={i} style={{ borderBottom: '1px solid #333' }}>
                       <td style={{ padding: '16px 20px', fontWeight: 'bold' }}>{r.id}</td>
                       <td style={{ padding: '16px 20px' }}>{r.productTitle || 'Rental Product'}</td>
+                      <td style={{ padding: '16px 20px' }}>{r.date || 'N/A'}</td>
                       <td style={{ padding: '16px 20px' }}>
                         <div style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                           <FaIdCard color="#0ea5e9" /> {r.kycForm?.idType || 'Government ID'}: 
@@ -373,7 +376,7 @@ function AdminDashboard() {
                         )}
                       </td>
                     </tr>
-                  )) : <tr><td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: '#888' }}>No active rentals found in database.</td></tr>}
+                  )) : <tr><td colSpan="7" style={{ padding: '20px', textAlign: 'center', color: '#888' }}>No active rentals found in database.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -454,7 +457,7 @@ function AdminDashboard() {
 
       {selectedIdImage && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
-          <div style={{ backgroundColor: isDarkMode ? '#1e1e1e' : '#fff', padding: '20px', borderRadius: '12px', maxWidth: '600px', width: '100%', position: 'hidden', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+          <div style={{ backgroundColor: isDarkMode ? '#1e1e1e' : '#fff', padding: '20px', borderRadius: '12px', maxWidth: '600px', width: '100%', position: 'relative', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
               <h3 style={{ margin: 0, color: isDarkMode ? '#fff' : '#111' }}>Uploaded Government ID</h3>
               <button onClick={() => setSelectedIdImage(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: isDarkMode ? '#fff' : '#111' }}>
