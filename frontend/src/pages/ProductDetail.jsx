@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaStar, FaShieldAlt, FaTruck, FaUndo, FaTimes, FaLock, FaHeart, FaUserCircle, FaBoxOpen, FaMapMarkerAlt, FaPlus, FaCreditCard, FaChevronDown, FaChevronUp, FaCalendarAlt, FaCrown, FaArrowRight, FaWallet, FaCheckCircle, FaRobot, FaUser, FaLightbulb } from 'react-icons/fa';
 import { useTheme } from '../context/ThemeContext';
 import { auth, db } from '../firebase';
-import { ref, push, onValue, update } from 'firebase/database';
+import { ref, push, onValue, update, get } from 'firebase/database';
 import '../App.css';
 
 // Import central products catalog
@@ -118,12 +118,39 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
   const [useWallet, setUseWallet] = useState(false);
   const [rentUseWallet, setRentUseWallet] = useState(false);
 
+  const [checkoutAddresses, setCheckoutAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [selectedRentAddrId, setSelectedRentAddrId] = useState(null);
+  const [isAddingAddress, setIsAddingAddress] = useState(false);
+
   useEffect(() => {
     const currentUser = auth.currentUser;
     if (currentUser) {
       const walletRef = ref(db, `users/${currentUser.uid}/walletBalance`);
       onValue(walletRef, (snapshot) => {
         setWalletBalance(snapshot.exists() ? snapshot.val() : 0);
+      });
+
+      // Fetch user's saved addresses dynamically from Firebase
+      const addressesRef = ref(db, `users/${currentUser.uid}/addresses`);
+      get(addressesRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const loadedAddresses = Object.keys(data).map((key) => ({
+            id: key,
+            ...data[key]
+          }));
+          setCheckoutAddresses(loadedAddresses);
+          if (loadedAddresses.length > 0) {
+            setSelectedAddressId(loadedAddresses[0].id);
+            setSelectedRentAddrId(loadedAddresses[0].id);
+          }
+        } else {
+          setCheckoutAddresses([]);
+          setIsAddingAddress(true);
+        }
+      }).catch((error) => {
+        console.error("Error fetching addresses:", error);
       });
     }
   }, []);
@@ -137,8 +164,6 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
 
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState('address'); 
-  const [isAddingAddress, setIsAddingAddress] = useState(false);
-  const [selectedAddressId, setSelectedAddressId] = useState(1);
   const [selectedPayment, setSelectedPayment] = useState('UPI');
   const [upiProvider, setUpiProvider] = useState('GPay');
   const [upiId, setUpiId] = useState('');
@@ -147,9 +172,6 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
   const [cardCvv, setCardCvv] = useState('');
   const [cardName, setCardName] = useState('');
   
-  const [checkoutAddresses, setCheckoutAddresses] = useState([
-    { id: 1, name: 'Mohd Mujtaba Nizami', phone: '7566952724', address: 'Main Street, Muhammadabad Gohna', city: 'Mau', state: 'Uttar Pradesh', pincode: '275403' }
-  ]);
   const [newAddr, setNewAddr] = useState({ name: '', phone: '', address: '', city: '', state: '', pincode: '' });
 
   const [showRentModal, setShowRentModal] = useState(false);
@@ -157,7 +179,6 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
   const [rentalDays, setRentalDays] = useState('2'); 
   const [kycForm, setKycForm] = useState({ fullName: '', phone: '', idType: 'Government ID', idNumber: '', idPhoto: null, agreedToTerms: false });
   const [rentAddressMode, setRentAddressMode] = useState('saved'); 
-  const [selectedRentAddrId, setSelectedRentAddrId] = useState(1);
   const [rentNewAddress, setRentNewAddress] = useState({ fullName: '', phone: '', street: '', city: '', pincode: '' });
   const [rentPayment, setRentPayment] = useState('upi');
   const [rentUpiId, setRentUpiId] = useState('');
@@ -203,14 +224,33 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
     processOffer(userOffer);
   };
 
-  const handleAddNewAddress = (e) => {
+  const handleAddNewAddress = async (e) => {
     e.preventDefault();
     if(!newAddr.name || !newAddr.phone || !newAddr.address || !newAddr.pincode) return alert("Please fill all details!");
-    const newId = Date.now();
-    setCheckoutAddresses([...checkoutAddresses, { id: newId, ...newAddr }]);
-    setSelectedAddressId(newId);
-    setIsAddingAddress(false);
-    setNewAddr({ name: '', phone: '', address: '', city: '', state: '', pincode: '' });
+    
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      const newAddressData = { 
+        name: newAddr.name, 
+        phone: newAddr.phone, 
+        address: newAddr.address, 
+        city: newAddr.city, 
+        state: newAddr.state || 'Uttar Pradesh', 
+        pincode: newAddr.pincode 
+      };
+
+      try {
+        const newAddrRef = push(ref(db, `users/${currentUser.uid}/addresses`), newAddressData);
+        const createdAddr = { id: newAddrRef.key, ...newAddressData };
+        setCheckoutAddresses([...checkoutAddresses, createdAddr]);
+        setSelectedAddressId(newAddrRef.key);
+        setIsAddingAddress(false);
+        setNewAddr({ name: '', phone: '', address: '', city: '', state: '', pincode: '' });
+      } catch (error) {
+        console.error("Error saving address:", error);
+        alert("Failed to save address.");
+      }
+    }
   };
 
   const handleRentExpiryChange = (e) => {
@@ -224,6 +264,11 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
+
+    if (!selectedAddressId || checkoutAddresses.length === 0) {
+      alert("Please select or add a delivery address!");
+      return;
+    }
 
     const activeTotal = dealAccepted ? negotiatedPrice : finalPrice;
     const isFullyPaidByWallet = useWallet && walletBalance >= activeTotal;
@@ -288,6 +333,10 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
 
   const handleRentAddressSubmit = (e) => {
     e.preventDefault();
+    if (rentAddressMode === 'saved' && (!selectedRentAddrId || checkoutAddresses.length === 0)) {
+      alert("Please select or add a delivery address!");
+      return;
+    }
     if (rentAddressMode === 'new' && (!rentNewAddress.fullName || !rentNewAddress.phone || !rentNewAddress.street || !rentNewAddress.city || !rentNewAddress.pincode)) {
       return alert("Please fill in all new address details!");
     }
@@ -664,18 +713,22 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
                 <>
                   <h3 style={{ fontSize: '18px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}><FaMapMarkerAlt color="#007185"/> Select Delivery Address</h3>
                   
-                  {checkoutAddresses.map(addr => (
-                    <div key={addr.id} onClick={() => setSelectedAddressId(addr.id)} style={{ padding: '15px', border: selectedAddressId === addr.id ? '2px solid #e47911' : (isDarkMode ? '1px solid #444' : '1px solid #ddd'), borderRadius: '8px', marginBottom: '10px', backgroundColor: selectedAddressId === addr.id ? (isDarkMode ? '#3b2f15' : '#fdf8f4') : (isDarkMode ? '#2c2c2c' : '#fff'), cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '15px' }}>
-                      <input type="radio" checked={selectedAddressId === addr.id} readOnly style={{ marginTop: '4px', accentColor: '#e47911' }} />
-                      <div>
-                        <strong style={{ fontSize: '15px', display: 'block', marginBottom: '5px' }}>{addr.name}</strong>
-                        <div style={{ fontSize: '13px', color: isDarkMode ? '#ccc' : '#555', lineHeight: '1.5' }}>
-                          {addr.address}, {addr.city}, {addr.state} {addr.pincode} <br/>
-                          Phone: {addr.phone}
+                  {checkoutAddresses.length > 0 ? (
+                    checkoutAddresses.map(addr => (
+                      <div key={addr.id} onClick={() => setSelectedAddressId(addr.id)} style={{ padding: '15px', border: selectedAddressId === addr.id ? '2px solid #e47911' : (isDarkMode ? '1px solid #444' : '1px solid #ddd'), borderRadius: '8px', marginBottom: '10px', backgroundColor: selectedAddressId === addr.id ? (isDarkMode ? '#3b2f15' : '#fdf8f4') : (isDarkMode ? '#2c2c2c' : '#fff'), cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '15px' }}>
+                        <input type="radio" checked={selectedAddressId === addr.id} readOnly style={{ marginTop: '4px', accentColor: '#e47911' }} />
+                        <div>
+                          <strong style={{ fontSize: '15px', display: 'block', marginBottom: '5px' }}>{addr.name}</strong>
+                          <div style={{ fontSize: '13px', color: isDarkMode ? '#ccc' : '#555', lineHeight: '1.5' }}>
+                            {addr.address}, {addr.city}, {addr.state} {addr.pincode} <br/>
+                            Phone: {addr.phone}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p style={{ color: isDarkMode ? '#aaa' : '#666', fontStyle: 'italic', marginBottom: '15px' }}>No saved addresses found. Please add a new delivery address below.</p>
+                  )}
 
                   {!isAddingAddress ? (
                     <button onClick={() => setIsAddingAddress(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#007185', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px', fontSize: '14px' }}>
@@ -693,12 +746,14 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
                       </div>
                       <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
                         <button type="submit" style={{ flex: 1, padding: '10px', backgroundColor: '#ffd814', color: '#111', border: '1px solid #fcd200', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Save & Use Address</button>
-                        <button type="button" onClick={() => setIsAddingAddress(false)} style={{ flex: 1, padding: '10px', background: 'transparent', color: '#d32f2f', border: '1px solid #d32f2f', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
+                        {checkoutAddresses.length > 0 && (
+                          <button type="button" onClick={() => setIsAddingAddress(false)} style={{ flex: 1, padding: '10px', background: 'transparent', color: '#d32f2f', border: '1px solid #d32f2f', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
+                        )}
                       </div>
                     </form>
                   )}
 
-                  {!isAddingAddress && (
+                  {!isAddingAddress && checkoutAddresses.length > 0 && (
                     <button onClick={() => setCheckoutStep('payment')} style={{ width: '100%', padding: '12px', backgroundColor: '#ffd814', color: '#111', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '15px', marginTop: '20px', cursor: 'pointer' }}>Deliver to this address</button>
                   )}
                 </>
@@ -1023,18 +1078,22 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
 
                   {rentAddressMode === 'saved' ? (
                     <div>
-                      {checkoutAddresses.map(addr => (
-                        <div key={addr.id} onClick={() => setSelectedRentAddrId(addr.id)} style={{ padding: '15px', border: selectedRentAddrId === addr.id ? '2px solid #00a8e8' : (isDarkMode ? '1px solid #444' : '1px solid #ddd'), borderRadius: '8px', marginBottom: '10px', backgroundColor: selectedRentAddrId === addr.id ? (isDarkMode ? '#3b2f15' : '#fdf8f4') : (isDarkMode ? '#2c2c2c' : '#fff'), cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '15px' }}>
-                          <input type="radio" checked={selectedRentAddrId === addr.id} readOnly style={{ marginTop: '4px', accentColor: '#00a8e8' }} />
-                          <div>
-                            <strong style={{ fontSize: '15px', display: 'block', marginBottom: '5px' }}>{addr.name}</strong>
-                            <div style={{ fontSize: '13px', color: isDarkMode ? '#ccc' : '#555', lineHeight: '1.5' }}>
-                              {addr.address}, {addr.city}, {addr.state} {addr.pincode} <br/>
-                              Phone: {addr.phone}
+                      {checkoutAddresses.length > 0 ? (
+                        checkoutAddresses.map(addr => (
+                          <div key={addr.id} onClick={() => setSelectedRentAddrId(addr.id)} style={{ padding: '15px', border: selectedRentAddrId === addr.id ? '2px solid #00a8e8' : (isDarkMode ? '1px solid #444' : '1px solid #ddd'), borderRadius: '8px', marginBottom: '10px', backgroundColor: selectedRentAddrId === addr.id ? (isDarkMode ? '#3b2f15' : '#fdf8f4') : (isDarkMode ? '#2c2c2c' : '#fff'), cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '15px' }}>
+                            <input type="radio" checked={selectedRentAddrId === addr.id} readOnly style={{ marginTop: '4px', accentColor: '#00a8e8' }} />
+                            <div>
+                              <strong style={{ fontSize: '15px', display: 'block', marginBottom: '5px' }}>{addr.name}</strong>
+                              <div style={{ fontSize: '13px', color: isDarkMode ? '#ccc' : '#555', lineHeight: '1.5' }}>
+                                {addr.address}, {addr.city}, {addr.state} {addr.pincode} <br/>
+                                Phone: {addr.phone}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        <p style={{ color: isDarkMode ? '#aaa' : '#666', fontStyle: 'italic', marginBottom: '15px' }}>No saved addresses found. Please switch to "Add New Address" above.</p>
+                      )}
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>

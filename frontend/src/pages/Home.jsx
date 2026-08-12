@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaStar, FaFilter, FaTimes, FaLock, FaMapMarkerAlt, FaPlus, FaCreditCard, FaCheckCircle, FaArrowRight, FaCrown, FaRobot, FaUser, FaLightbulb, FaComments, FaWallet } from 'react-icons/fa';
 import { useTheme } from '../context/ThemeContext';
 import { auth, db } from '../firebase';
-import { ref, push, onValue, update } from 'firebase/database';
+import { ref, push, onValue, update, get } from 'firebase/database';
 import '../App.css';
 
 // Import central products catalog
@@ -25,8 +25,10 @@ function Home({ activeTab, searchQuery = '', isPremium }) {
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState('address'); 
   const [checkoutItem, setCheckoutItem] = useState(null);
-  const [checkoutAddresses, setCheckoutAddresses] = useState([{ id: 1, name: 'Mohd Mujtaba Nizami', phone: '7566952724', address: 'Main Street', city: 'Mau', state: 'Uttar Pradesh', pincode: '275403' }]);
-  const [selectedAddressId, setSelectedAddressId] = useState(1);
+  
+  // Replaced hardcoded address with empty state for dynamic fetching
+  const [checkoutAddresses, setCheckoutAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [newAddr, setNewAddr] = useState({ name: '', phone: '', address: '', city: '', state: '', pincode: '' });
   
@@ -44,6 +46,27 @@ function Home({ activeTab, searchQuery = '', isPremium }) {
       const walletRef = ref(db, `users/${currentUser.uid}/walletBalance`);
       onValue(walletRef, (snapshot) => {
         setWalletBalance(snapshot.exists() ? snapshot.val() : 0);
+      });
+
+      // Fetch user's saved addresses dynamically from Firebase
+      const addressesRef = ref(db, `users/${currentUser.uid}/addresses`);
+      get(addressesRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const loadedAddresses = Object.keys(data).map((key) => ({
+            id: key,
+            ...data[key]
+          }));
+          setCheckoutAddresses(loadedAddresses);
+          if (loadedAddresses.length > 0) {
+            setSelectedAddressId(loadedAddresses[0].id);
+          }
+        } else {
+          setCheckoutAddresses([]);
+          setIsAddingAddress(true); // Automatically open add address form if no address exists
+        }
+      }).catch((error) => {
+        console.error("Error fetching addresses:", error);
       });
     }
   }, []);
@@ -121,18 +144,36 @@ function Home({ activeTab, searchQuery = '', isPremium }) {
   const handleProceedToCheckout = () => {
     setShowBargainModal(false);
     setCheckoutStep('address');
-    setIsAddingAddress(false);
     setShowCheckoutModal(true);
   };
 
-  const handleAddNewAddress = (e) => {
+  const handleAddNewAddress = async (e) => {
     e.preventDefault();
     if(!newAddr.name || !newAddr.phone || !newAddr.address || !newAddr.pincode) return alert("Please fill all details!");
-    const newId = Date.now();
-    setCheckoutAddresses([...checkoutAddresses, { id: newId, ...newAddr }]);
-    setSelectedAddressId(newId);
-    setIsAddingAddress(false);
-    setNewAddr({ name: '', phone: '', address: '', city: '', state: '', pincode: '' });
+    
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      const newAddressData = { 
+        name: newAddr.name, 
+        phone: newAddr.phone, 
+        address: newAddr.address, 
+        city: newAddr.city, 
+        state: newAddr.state || 'Uttar Pradesh', 
+        pincode: newAddr.pincode 
+      };
+
+      try {
+        const newAddrRef = push(ref(db, `users/${currentUser.uid}/addresses`), newAddressData);
+        const createdAddr = { id: newAddrRef.key, ...newAddressData };
+        setCheckoutAddresses([...checkoutAddresses, createdAddr]);
+        setSelectedAddressId(newAddrRef.key);
+        setIsAddingAddress(false);
+        setNewAddr({ name: '', phone: '', address: '', city: '', state: '', pincode: '' });
+      } catch (error) {
+        console.error("Error saving address:", error);
+        alert("Failed to save address.");
+      }
+    }
   };
 
   const handleExpiryChange = (e) => {
@@ -146,6 +187,11 @@ function Home({ activeTab, searchQuery = '', isPremium }) {
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
+
+    if (!selectedAddressId || checkoutAddresses.length === 0) {
+      alert("Please select or add a delivery address!");
+      return;
+    }
 
     const isFullyPaidByWallet = useWallet && walletBalance >= checkoutTotal;
 
@@ -262,7 +308,7 @@ function Home({ activeTab, searchQuery = '', isPremium }) {
   };
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '20px auto', padding: '0 20px' }}>
+   <div style={{ width: '95%', maxWidth: '1200px', margin: '20px auto', padding: '0 10px' }}>
         
         {/* Filters Panel Section */}
         <div style={{ backgroundColor: isDarkMode ? '#1e1e1e' : '#fff', color: isDarkMode ? '#fff' : '#000', border: isDarkMode ? '1px solid #444' : '1px solid #ddd', borderRadius: '8px', padding: '20px', marginBottom: '30px' }}>
@@ -456,12 +502,16 @@ function Home({ activeTab, searchQuery = '', isPremium }) {
                       </div>
                     </div>
                     
-                    {checkoutAddresses.map(addr => (
-                      <div key={addr.id} onClick={() => setSelectedAddressId(addr.id)} style={{ padding: '15px', border: selectedAddressId === addr.id ? '2px solid #e47911' : '1px solid #ccc', borderRadius: '8px', marginBottom: '10px', cursor: 'pointer', display: 'flex', gap: '15px' }}>
-                        <input type="radio" checked={selectedAddressId === addr.id} readOnly style={{ accentColor: '#e47911' }} />
-                        <div><strong>{addr.name}</strong><div style={{ fontSize: '13px' }}>{addr.address}, {addr.city}</div></div>
-                      </div>
-                    ))}
+                    {checkoutAddresses.length > 0 ? (
+                      checkoutAddresses.map(addr => (
+                        <div key={addr.id} onClick={() => setSelectedAddressId(addr.id)} style={{ padding: '15px', border: selectedAddressId === addr.id ? '2px solid #e47911' : '1px solid #ccc', borderRadius: '8px', marginBottom: '10px', cursor: 'pointer', display: 'flex', gap: '15px' }}>
+                          <input type="radio" checked={selectedAddressId === addr.id} readOnly style={{ accentColor: '#e47911' }} />
+                          <div><strong>{addr.name}</strong><div style={{ fontSize: '13px' }}>{addr.address}, {addr.city}</div></div>
+                        </div>
+                      ))
+                    ) : (
+                      <p style={{ color: isDarkMode ? '#aaa' : '#666', fontStyle: 'italic', marginBottom: '15px' }}>No saved addresses found. Please add a new delivery address below.</p>
+                    )}
 
                     {!isAddingAddress ? (
                       <button onClick={() => setIsAddingAddress(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#007185', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px', fontSize: '14px' }}>
@@ -479,12 +529,14 @@ function Home({ activeTab, searchQuery = '', isPremium }) {
                         </div>
                         <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
                           <button type="submit" style={{ flex: 1, padding: '10px', backgroundColor: '#ffd814', color: '#111', border: '1px solid #fcd200', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Save & Use Address</button>
-                          <button type="button" onClick={() => setIsAddingAddress(false)} style={{ flex: 1, padding: '10px', background: 'transparent', color: '#d32f2f', border: '1px solid #d32f2f', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
+                          {checkoutAddresses.length > 0 && (
+                            <button type="button" onClick={() => setIsAddingAddress(false)} style={{ flex: 1, padding: '10px', background: 'transparent', color: '#d32f2f', border: '1px solid #d32f2f', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
+                          )}
                         </div>
                       </form>
                     )}
 
-                    {!isAddingAddress && (
+                    {!isAddingAddress && checkoutAddresses.length > 0 && (
                       <button onClick={() => setCheckoutStep('payment')} style={{ width: '100%', padding: '12px', backgroundColor: '#ffd814', color: '#111', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '15px', marginTop: '20px', cursor: 'pointer' }}>Deliver to this address</button>
                     )}
                   </>

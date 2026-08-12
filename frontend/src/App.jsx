@@ -246,7 +246,13 @@ function MainApp() {
             title="Open Menu"
           />
           <Link to="/" style={{ textDecoration: 'none' }} onClick={() => setSearchQuery('')}>
-            <div className="nav-logo">Bargain<span>Cart</span></div>
+            <div style={{ display: 'flex', alignItems: 'center', height: '45px' }}>
+              <img 
+                src="/logo.png" 
+                alt="BargainCart" 
+                style={{ height: '38px', width: 'auto', objectFit: 'contain', display: 'block' }} 
+              />
+            </div>
           </Link>
         </div>
         
@@ -389,14 +395,24 @@ function MainApp() {
       </div>
 
       {/* Sidebar Drawer */}
-      {isDrawerOpen && (
-        <div className="drawer-overlay">
-          <div className="drawer-content" style={{ backgroundColor: isDarkMode ? '#1e1e1e' : '#fff', color: isDarkMode ? '#fff' : '#000' }}>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px 20px', backgroundColor: isDarkMode ? '#1e1e1e' : '#fff', color: isDarkMode ? '#fff' : '#111', borderBottom: isDarkMode ? '1px solid #444' : '1px solid #eee' }}>
-              <FaTimes size={20} style={{ cursor: 'pointer', color: isDarkMode ? '#fff' : '#111' }} onClick={() => setIsDrawerOpen(false)} />
-              <h2 style={{ margin: 0, fontSize: '18px', color: isDarkMode ? '#fff' : '#111' }}>Menu</h2>
-            </div>
+{isDrawerOpen && (
+  <div className="drawer-overlay">
+    <div className="drawer-content" style={{ backgroundColor: isDarkMode ? '#1e1e1e' : '#fff', color: isDarkMode ? '#fff' : '#000' }}>
+      
+      {/* Top Header with Logo and Close Button */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 20px', backgroundColor: isDarkMode ? '#1e1e1e' : '#fff', borderBottom: isDarkMode ? '1px solid #444' : '1px solid #eee' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <img 
+            src="/logo.png" 
+            alt="BargainCart" 
+            style={{ height: '32px', width: 'auto', objectFit: 'contain' }} 
+          />
+          <span style={{ fontSize: '18px', fontWeight: 'bold', color: isDarkMode ? '#fff' : '#111' }}>
+            Bargain<span style={{ color: '#febd69' }}>Cart</span>
+          </span>
+        </div>
+        <FaTimes size={20} style={{ cursor: 'pointer', color: isDarkMode ? '#fff' : '#111' }} onClick={() => setIsDrawerOpen(false)} />
+      </div>
 
             <div className="profile-click-area" onClick={() => { 
                 if(!user) { navigate('/login'); } else { navigate('/profile'); }

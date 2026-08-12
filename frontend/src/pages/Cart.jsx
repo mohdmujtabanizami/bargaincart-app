@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { FaTrash, FaShoppingBag, FaKey, FaArrowRight, FaShieldAlt, FaCheckCircle, FaMapMarkerAlt, FaCreditCard, FaComments, FaTimes, FaCalendarAlt, FaPlus, FaMinus, FaRobot, FaUser, FaLightbulb, FaLock, FaWallet } from 'react-icons/fa';
 import { useTheme } from '../context/ThemeContext';
 import { auth, db } from '../firebase';
-import { ref, push, onValue, update } from 'firebase/database';
+import { ref, push, onValue, update, get } from 'firebase/database';
 import '../App.css';
 
 // Import central products catalog
@@ -40,10 +40,9 @@ function Cart({ cartItems, removeFromCart, clearCart, updateCartItemPrice }) {
     agreedToTerms: false
   });
 
-  const [checkoutAddresses, setCheckoutAddresses] = useState([
-    { id: 1, name: 'Mohd Mujtaba Nizami', phone: '7566952724', address: 'Main Street, Muhammadabad Gohna', city: 'Mau', state: 'Uttar Pradesh', pincode: '275403' }
-  ]);
-  const [selectedAddressId, setSelectedAddressId] = useState(1);
+  // Replaced hardcoded address with empty state to fetch dynamically from Firebase
+  const [checkoutAddresses, setCheckoutAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [newAddr, setNewAddr] = useState({ name: '', phone: '', address: '', city: '', state: '', pincode: '' });
 
@@ -65,6 +64,27 @@ function Cart({ cartItems, removeFromCart, clearCart, updateCartItemPrice }) {
       const walletRef = ref(db, `users/${currentUser.uid}/walletBalance`);
       onValue(walletRef, (snapshot) => {
         setWalletBalance(snapshot.exists() ? snapshot.val() : 0);
+      });
+
+      // Fetch user's saved addresses dynamically from Firebase
+      const addressesRef = ref(db, `users/${currentUser.uid}/addresses`);
+      get(addressesRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const loadedAddresses = Object.keys(data).map((key) => ({
+            id: key,
+            ...data[key]
+          }));
+          setCheckoutAddresses(loadedAddresses);
+          if (loadedAddresses.length > 0) {
+            setSelectedAddressId(loadedAddresses[0].id);
+          }
+        } else {
+          setCheckoutAddresses([]);
+          setIsAddingAddress(true); // Automatically open add address form if no address exists
+        }
+      }).catch((error) => {
+        console.error("Error fetching addresses:", error);
       });
     }
   }, []);
@@ -204,22 +224,43 @@ function Cart({ cartItems, removeFromCart, clearCart, updateCartItemPrice }) {
     setCheckoutStep('address');
   };
 
-  const handleAddNewAddress = (e) => {
+  const handleAddNewAddress = async (e) => {
     e.preventDefault();
     if(!newAddr.name || !newAddr.phone || !newAddr.address || !newAddr.pincode) {
       alert("Please fill all details!");
       return;
     }
-    const newId = Date.now();
-    const createdAddr = { id: newId, name: newAddr.name, phone: newAddr.phone, address: newAddr.address, city: newAddr.city, state: 'State', pincode: newAddr.pincode };
-    setCheckoutAddresses([...checkoutAddresses, createdAddr]);
-    setSelectedAddressId(newId);
-    setIsAddingAddress(false);
-    setNewAddr({ name: '', phone: '', address: '', city: '', state: '', pincode: '' });
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      const newAddressData = { 
+        name: newAddr.name, 
+        phone: newAddr.phone, 
+        address: newAddr.address, 
+        city: newAddr.city, 
+        state: newAddr.state || 'Uttar Pradesh', 
+        pincode: newAddr.pincode 
+      };
+      
+      try {
+        const newAddrRef = push(ref(db, `users/${currentUser.uid}/addresses`), newAddressData);
+        const createdAddr = { id: newAddrRef.key, ...newAddressData };
+        setCheckoutAddresses([...checkoutAddresses, createdAddr]);
+        setSelectedAddressId(newAddrRef.key);
+        setIsAddingAddress(false);
+        setNewAddr({ name: '', phone: '', address: '', city: '', state: '', pincode: '' });
+      } catch (error) {
+        console.error("Error saving address:", error);
+        alert("Failed to save address.");
+      }
+    }
   };
 
   const handleAddressSubmit = (e) => {
     e.preventDefault();
+    if (!selectedAddressId || checkoutAddresses.length === 0) {
+      alert("Please select or add a delivery address!");
+      return;
+    }
     setCheckoutStep('payment');
   };
 
@@ -323,11 +364,11 @@ function Cart({ cartItems, removeFromCart, clearCart, updateCartItemPrice }) {
           <FaCheckCircle size={70} color="#007600" style={{ marginBottom: '15px' }} />
           <h1 style={{ color: '#007600', marginBottom: '10px' }}>Congratulations! Order Placed Successfully!</h1>
           <p style={{ fontSize: '15px', color: isDarkMode ? '#ccc' : '#555', marginBottom: '20px' }}>
-            Thank you for shopping with <strong>BargainCart</strong>. Your order has been placed and will be delivered soon to <strong>{activeAddress.city}</strong>.
+            Thank you for shopping with <strong>BargainCart</strong>. Your order has been placed and will be delivered soon to <strong>{activeAddress?.city || 'your city'}</strong>.
           </p>
           <div style={{ backgroundColor: isDarkMode ? '#2c2c2c' : '#f8f9fa', padding: '15px', borderRadius: '6px', maxWidth: '400px', margin: '0 auto 25px auto', textAlign: 'left', fontSize: '13px', color: isDarkMode ? '#fff' : '#333', border: isDarkMode ? '1px solid #444' : 'none' }}>
-            <p style={{ margin: '0 0 5px 0' }}><strong>Delivery Address:</strong> {activeAddress.address}, {activeAddress.city} - {activeAddress.pincode}</p>
-            <p style={{ margin: '0 0 5px 0' }}><strong>Contact:</strong> {activeAddress.phone}</p>
+            <p style={{ margin: '0 0 5px 0' }}><strong>Delivery Address:</strong> {activeAddress ? `${activeAddress.address}, ${activeAddress.city} - ${activeAddress.pincode}` : 'N/A'}</p>
+            <p style={{ margin: '0 0 5px 0' }}><strong>Contact:</strong> {activeAddress?.phone || 'N/A'}</p>
             <p style={{ margin: '0 0 5px 0' }}><strong>Payment Mode:</strong> {useWallet && walletBalance >= totalAmount ? 'BargainCart Wallet / Gift Card' : paymentMethod.toUpperCase()}</p>
           </div>
           <button 
@@ -441,18 +482,22 @@ function Cart({ cartItems, removeFromCart, clearCart, updateCartItemPrice }) {
           <div style={{ maxWidth: '600px', margin: '0 auto' }}>
             <h3 style={{ fontSize: '16px', marginBottom: '15px', color: isDarkMode ? '#ddd' : '#333' }}>Choose from Saved Addresses:</h3>
             
-            {checkoutAddresses.map(addr => (
-              <div key={addr.id} onClick={() => setSelectedAddressId(addr.id)} style={{ padding: '15px', border: selectedAddressId === addr.id ? '2px solid #e47911' : (isDarkMode ? '1px solid #444' : '1px solid #ddd'), borderRadius: '8px', marginBottom: '10px', backgroundColor: selectedAddressId === addr.id ? (isDarkMode ? '#3b2f15' : '#fdf8f4') : (isDarkMode ? '#2c2c2c' : '#fff'), cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '15px' }}>
-                <input type="radio" checked={selectedAddressId === addr.id} readOnly style={{ marginTop: '4px', accentColor: '#e47911' }} />
-                <div>
-                  <strong style={{ fontSize: '15px', display: 'block', marginBottom: '5px' }}>{addr.name} (Default)</strong>
-                  <div style={{ fontSize: '13px', color: isDarkMode ? '#ccc' : '#555', lineHeight: '1.5' }}>
-                    {addr.address}, {addr.city}, {addr.state} {addr.pincode} <br/>
-                    Phone: {addr.phone}
+            {checkoutAddresses.length > 0 ? (
+              checkoutAddresses.map(addr => (
+                <div key={addr.id} onClick={() => setSelectedAddressId(addr.id)} style={{ padding: '15px', border: selectedAddressId === addr.id ? '2px solid #e47911' : (isDarkMode ? '1px solid #444' : '1px solid #ddd'), borderRadius: '8px', marginBottom: '10px', backgroundColor: selectedAddressId === addr.id ? (isDarkMode ? '#3b2f15' : '#fdf8f4') : (isDarkMode ? '#2c2c2c' : '#fff'), cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '15px' }}>
+                  <input type="radio" checked={selectedAddressId === addr.id} readOnly style={{ marginTop: '4px', accentColor: '#e47911' }} />
+                  <div>
+                    <strong style={{ fontSize: '15px', display: 'block', marginBottom: '5px' }}>{addr.name}</strong>
+                    <div style={{ fontSize: '13px', color: isDarkMode ? '#ccc' : '#555', lineHeight: '1.5' }}>
+                      {addr.address}, {addr.city}, {addr.state} {addr.pincode} <br/>
+                      Phone: {addr.phone}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p style={{ color: isDarkMode ? '#aaa' : '#666', fontStyle: 'italic', marginBottom: '15px' }}>No saved addresses found. Please add a new delivery address below.</p>
+            )}
 
             {!isAddingAddress ? (
               <button onClick={() => setIsAddingAddress(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#007185', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px', fontSize: '14px', marginBottom: '25px' }}>
@@ -470,12 +515,14 @@ function Cart({ cartItems, removeFromCart, clearCart, updateCartItemPrice }) {
                 </div>
                 <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
                   <button type="submit" style={{ flex: 1, padding: '10px', backgroundColor: '#ffd814', color: '#111', border: '1px solid #fcd200', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Save & Use Address</button>
-                  <button type="button" onClick={() => setIsAddingAddress(false)} style={{ flex: 1, padding: '10px', background: 'transparent', color: '#d32f2f', border: '1px solid #d32f2f', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
+                  {checkoutAddresses.length > 0 && (
+                    <button type="button" onClick={() => setIsAddingAddress(false)} style={{ flex: 1, padding: '10px', background: 'transparent', color: '#d32f2f', border: '1px solid #d32f2f', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
+                  )}
                 </div>
               </form>
             )}
 
-            {!isAddingAddress && (
+            {!isAddingAddress && checkoutAddresses.length > 0 && (
               <button onClick={handleAddressSubmit} className="amazon-btn" style={{ width: '100%', padding: '12px', backgroundColor: '#ffd814', color: '#111', border: '1px solid #fcd200', fontWeight: 'bold', borderRadius: '8px', cursor: 'pointer', fontSize: '15px' }}>
                 Deliver to this address & Proceed to Payment <FaArrowRight />
               </button>
@@ -496,7 +543,7 @@ function Cart({ cartItems, removeFromCart, clearCart, updateCartItemPrice }) {
           <form onSubmit={handlePaymentSubmit} style={{ maxWidth: '600px', margin: '0 auto' }} autoComplete="off">
             <div style={{ backgroundColor: isDarkMode ? '#2c2c2c' : '#f8f9fa', padding: '15px', borderRadius: '6px', marginBottom: '20px', border: isDarkMode ? '1px solid #444' : '1px solid #ddd' }}>
               <h4 style={{ margin: '0 0 10px 0', color: isDarkMode ? '#fff' : '#333' }}>Order Summary ({checkoutType === 'buy' ? 'Buy Order' : 'Rental Order'})</h4>
-              <p style={{ margin: '0 0 5px 0', fontSize: '14px' }}>Deliver to: <strong>{activeAddress.name} ({activeAddress.city} - {activeAddress.pincode})</strong></p>
+              <p style={{ margin: '0 0 5px 0', fontSize: '14px' }}>Deliver to: <strong>{activeAddress?.name} ({activeAddress?.city} - {activeAddress?.pincode})</strong></p>
               <p style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#B12704' }}>
                 Total Payable Amount: ₹{totalAmount.toLocaleString()}
                 {useWallet && <span style={{ fontSize: '13px', color: '#10b981', display: 'block' }}>(Paying via Wallet Balance: ₹{Math.min(walletBalance, totalAmount).toLocaleString()})</span>}

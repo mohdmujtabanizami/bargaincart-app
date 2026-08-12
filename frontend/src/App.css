@@ -475,3 +475,28 @@ body {
 .logout-btn-zepto:hover {
   background-color: #f0f0f0;
 }
+/* For all screens */
+* {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Mobile Devices */
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden; /* Screen ko sideways scroll hone se rokega */
+  }
+  .navbar {
+    padding: 0 10px !important;
+  }
+  .product-grid {
+    grid-template-columns: 1fr !important; /* Mobile par 1 column dikhayega */
+  }
+}
+
+/* Tablet Devices */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .product-grid {
+    grid-template-columns: 1fr 1fr !important; /* Tablet par 2 column */
+  }
+}
