@@ -39,7 +39,20 @@ function AdminDashboard() {
         const ordersSnap = await get(ordersRef);
         if (ordersSnap.exists()) {
           const ordData = ordersSnap.val();
-          const ordArray = Object.keys(ordData).map(key => ({ dbKey: key, id: key, ...ordData[key] }));
+          // Map, add formatted timestamp if missing, and reverse so latest appear at top
+          const ordArray = Object.keys(ordData).map(key => {
+            const item = ordData[key];
+            // Agar orderId mein timestamp chhipta hai (e.g. ORD-1723456789123) toh wahan se exact time nikal sakte hain, ya item.date ko use karenge
+            let formattedDate = item.date || 'N/A';
+            if (item.orderId && item.orderId.startsWith('ORD-')) {
+              const timestampPart = item.orderId.replace('ORD-', '');
+              if (!isNaN(timestampPart)) {
+                const d = new Date(parseInt(timestampPart));
+                formattedDate = `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
+              }
+            }
+            return { dbKey: key, id: key, ...item, formattedDate };
+          }).reverse();
           
           setOrdersList(ordArray);
           setRentalsList(ordArray.filter(ord => ord.type === 'rent' || ord.orderId?.startsWith('RNT')));
@@ -55,7 +68,6 @@ function AdminDashboard() {
               id: key,
               email: userNode.email || userNode.profile?.email || 'bargaincart@user.com',
               fullName: userNode.profile?.fullName || userNode.displayName || 'BargainCart User',
-              // Fixed: Removed hardcoded phone fallback, now shows N/A if signed up via Google without phone
               phone: userNode.profile?.phone || userNode.phone || 'N/A',
               walletBalance: userNode.walletBalance || 0,
               isPremium: userNode.isPremium || false
@@ -181,12 +193,13 @@ function AdminDashboard() {
 
               {/* LIVE ORDERS TABLE */}
               <div style={{ backgroundColor: isDarkMode ? '#1c1c1c' : '#fff', borderRadius: '12px', overflow: 'hidden' }}>
-                <div style={{ padding: '20px 25px', fontWeight: 'bold', fontSize: '18px', color: isDarkMode ? '#fff' : '#0f172a' }}>Live Orders from Database</div>
+                <div style={{ padding: '20px 25px', fontWeight: 'bold', fontSize: '18px', color: isDarkMode ? '#fff' : '#0f172a' }}>Live Orders from Database (Newest First)</div>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead style={{ backgroundColor: isDarkMode ? '#222' : '#f8fafc', color: '#94a3b8', fontSize: '12px' }}>
                     <tr>
                       <th style={{ padding: '15px 25px' }}>Order ID</th>
                       <th style={{ padding: '15px 25px' }}>Product</th>
+                      <th style={{ padding: '15px 25px' }}>Date & Time</th>
                       <th style={{ padding: '15px 25px' }}>Amount</th>
                       <th style={{ padding: '15px 25px' }}>Status</th>
                     </tr>
@@ -196,10 +209,11 @@ function AdminDashboard() {
                       <tr key={i} style={{ borderBottom: '1px solid #333' }}>
                         <td style={{ padding: '16px 25px', fontWeight: 'bold' }}>{ord.id}</td>
                         <td style={{ padding: '16px 25px' }}>{ord.productTitle || 'N/A'}</td>
+                        <td style={{ padding: '16px 25px', fontSize: '13px', color: '#94a3b8' }}>{ord.formattedDate}</td>
                         <td style={{ padding: '16px 25px', fontWeight: 'bold', color: '#0ea5e9' }}>₹{ord.amount || 0}</td>
                         <td style={{ padding: '16px 25px' }}><span style={{ backgroundColor: ord.status?.includes('Cancelled') ? '#fee2e2' : '#e0f2fe', color: ord.status?.includes('Cancelled') ? '#dc2626' : '#0369a1', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold' }}>{ord.status || 'Processing'}</span></td>
                       </tr>
-                    )) : <tr><td colSpan="4" style={{ padding: '20px', textAlign: 'center', color: '#888' }}>No live orders found in database yet.</td></tr>}
+                    )) : <tr><td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#888' }}>No live orders found in database yet.</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -265,7 +279,7 @@ function AdminDashboard() {
                   <tr>
                     <th style={{ padding: '15px 20px' }}>Order Key</th>
                     <th style={{ padding: '15px 20px' }}>Product Title</th>
-                    <th style={{ padding: '15px 20px' }}>Order Date</th>
+                    <th style={{ padding: '15px 20px' }}>Order Date & Time</th>
                     <th style={{ padding: '15px 20px' }}>Amount</th>
                     <th style={{ padding: '15px 20px' }}>Status</th>
                   </tr>
@@ -275,7 +289,7 @@ function AdminDashboard() {
                     <tr key={i} style={{ borderBottom: '1px solid #333' }}>
                       <td style={{ padding: '16px 20px', fontWeight: 'bold', fontSize: '12px' }}>{ord.id}</td>
                       <td style={{ padding: '16px 20px' }}>{ord.productTitle || 'Product'}</td>
-                      <td style={{ padding: '16px 20px' }}>{ord.date || 'N/A'}</td>
+                      <td style={{ padding: '16px 20px', fontSize: '13px', color: '#94a3b8' }}>{ord.formattedDate}</td>
                       <td style={{ padding: '16px 20px', fontWeight: 'bold', color: '#10b981' }}>₹{ord.amount || 0}</td>
                       <td style={{ padding: '16px 20px' }}>
                         <span style={{ backgroundColor: ord.status?.includes('Cancelled') ? '#fee2e2' : '#dcfce7', color: ord.status?.includes('Cancelled') ? '#dc2626' : '#16a34a', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold' }}>
@@ -332,7 +346,7 @@ function AdminDashboard() {
                   <tr>
                     <th style={{ padding: '15px 20px' }}>Rental ID</th>
                     <th style={{ padding: '15px 20px' }}>Item Title</th>
-                    <th style={{ padding: '15px 20px' }}>Rental Date</th>
+                    <th style={{ padding: '15px 20px' }}>Rental Date & Time</th>
                     <th style={{ padding: '15px 20px' }}>KYC Details</th>
                     <th style={{ padding: '15px 20px' }}>Rental Amount</th>
                     <th style={{ padding: '15px 20px' }}>Status</th>
@@ -344,7 +358,7 @@ function AdminDashboard() {
                     <tr key={i} style={{ borderBottom: '1px solid #333' }}>
                       <td style={{ padding: '16px 20px', fontWeight: 'bold' }}>{r.id}</td>
                       <td style={{ padding: '16px 20px' }}>{r.productTitle || 'Rental Product'}</td>
-                      <td style={{ padding: '16px 20px' }}>{r.date || 'N/A'}</td>
+                      <td style={{ padding: '16px 20px', fontSize: '13px', color: '#94a3b8' }}>{r.formattedDate}</td>
                       <td style={{ padding: '16px 20px' }}>
                         <div style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                           <FaIdCard color="#0ea5e9" /> {r.kycForm?.idType || 'Government ID'}: 
