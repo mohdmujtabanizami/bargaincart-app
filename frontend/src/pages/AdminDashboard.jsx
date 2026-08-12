@@ -199,7 +199,7 @@ function AdminDashboard() {
                     <tr>
                       <th style={{ padding: '15px 25px' }}>Order ID</th>
                       <th style={{ padding: '15px 25px' }}>Product</th>
-                      <th style={{ padding: '15px 25px' }}>Date & Time</th>
+                      <th style={{ padding: '15px 25px' }}>Date</th>
                       <th style={{ padding: '15px 25px' }}>Amount</th>
                       <th style={{ padding: '15px 25px' }}>Status</th>
                     </tr>
