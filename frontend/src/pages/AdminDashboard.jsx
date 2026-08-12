@@ -22,16 +22,31 @@ function AdminDashboard() {
   // Modal State for Viewing KYC ID Image
   const [selectedIdImage, setSelectedIdImage] = useState(null);
 
-  // Admin Settings Editable Fields
-  // setAdminSettings is intentionally unused for now
-  // eslint-disable-next-line no-unused-vars
-  const [adminSettings, _setAdminSettings] = useState({
+  // Admin Settings Editable Fields - Fixed naming to setAdminSettings
+  const [adminSettings, setAdminSettings] = useState({
     siteName: 'BargainCart Live E-Commerce',
     adminEmail: 'bargaincart@admin.com',
     supportPhone: '+91-7566952724',
     maintenanceMode: false,
     autoApproveRentals: true
   });
+
+  // Helper function to accurately decode timestamp from Firebase Push ID or saved date string
+  const getAccurateTimestamp = (key, savedDate) => {
+    if (savedDate && !savedDate.includes('NaN') && !savedDate.includes('58583') && !savedDate.includes('7631') && savedDate !== 'N/A') {
+      return savedDate;
+    }
+    // Firebase push ID timestamp decoder
+    if (key && key.startsWith('-')) {
+      const PUSH_CHARS = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
+      let timestamp = 0;
+      for (let i = 1; i < 9; i++) {
+        timestamp = timestamp * 64 + PUSH_CHARS.indexOf(key[i]);
+      }
+      return new Date(timestamp).toLocaleString();
+    }
+    return new Date().toLocaleString();
+  };
 
   // Fetch real-time data from Firebase
   useEffect(() => {
@@ -44,16 +59,7 @@ function AdminDashboard() {
           
           const ordArray = Object.keys(ordData).map(key => {
             const item = ordData[key];
-            let formattedDate = item.date || '';
-            
-            // Agar date ke sath time pehle se nahi hai, toh ek real realistic fallback ya current time assign karein taaki 58583 jaisa year na aaye
-            if (!formattedDate || formattedDate.includes('58583') || formattedDate.includes('7631')) {
-              formattedDate = new Date().toLocaleString();
-            } else if (!formattedDate.includes(':')) {
-              // Agar sirf date hai time nahi, toh current time jod dein
-              formattedDate = `${formattedDate}, ${new Date().toLocaleTimeString()}`;
-            }
-
+            const formattedDate = getAccurateTimestamp(key, item.date);
             return { dbKey: key, id: key, ...item, formattedDate };
           }).reverse();
           
@@ -436,7 +442,7 @@ function AdminDashboard() {
                   <input 
                     type="text" 
                     value={adminSettings.supportPhone} 
-                    onChange={(e) => adminSettings({...adminSettings, supportPhone: e.target.value})}
+                    onChange={(e) => setAdminSettings({...adminSettings, supportPhone: e.target.value})}
                     style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #444', backgroundColor: isDarkMode ? '#1a1a1a' : '#fff', color: isDarkMode ? '#fff' : '#000', fontWeight: 'bold' }} 
                   />
                 </div>
@@ -447,7 +453,7 @@ function AdminDashboard() {
                     <input 
                       type="checkbox" 
                       checked={adminSettings.autoApproveRentals} 
-                      onChange={(e) => adminSettings({...adminSettings, autoApproveRentals: e.target.checked})}
+                      onChange={(e) => setAdminSettings({...adminSettings, autoApproveRentals: e.target.checked})}
                       style={{ width: '16px', height: '16px', accentColor: '#10b981' }}
                     />
                     Auto-Approve Rental KYC Verification
@@ -455,7 +461,7 @@ function AdminDashboard() {
                 </div>
 
                 <div style={{ padding: '15px', backgroundColor: isDarkMode ? '#252525' : '#f8fafc', borderRadius: '8px', border: '1px solid #444', marginTop: '10px' }}>
-                  <p style={{ margin: '0 0 5px 0', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}><FaShieldAlt color="#10b981" /> Live Database Status</p>
+                  <p style={{ margin: '0 0 5px 0', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}><FaShieldAlt color="#10b981" /> Live DatabaseStatus</p>
                   <p style={{ margin: 0, fontSize: '13px', color: '#10b981' }}>✔ Fully Connected to Firebase Realtime Database</p>
                 </div>
 
