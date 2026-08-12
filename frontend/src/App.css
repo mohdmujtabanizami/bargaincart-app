@@ -526,3 +526,37 @@ body {
     height: 34px !important;
   }
 }
+/* Mobile Navbar & Hamburger Menu Fix */
+@media (max-width: 768px) {
+  .navbar {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 8px 12px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  /* Hamburger Menu Icon ko mobile par hamesha dikhane ke liye */
+  .menu-icon, 
+  .navbar svg, 
+  button[aria-label="Menu"] {
+    display: inline-block !important;
+    visibility: visible !important;
+    font-size: 24px !important;
+    cursor: pointer !important;
+    color: inherit;
+  }
+
+  /* Search bar ko mobile par adjust karna taki jagah bani rahe */
+  .navbar form {
+    flex: 1 !important;
+    margin: 0 8px !important;
+    max-width: none !important;
+  }
+
+  .navbar input {
+    width: 100% !important;
+    font-size: 13px !important;
+    padding: 6px 10px !important;
+  }
+}
