@@ -35,11 +35,11 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
         discountPercent: product.discountPercent,
         image: product.image,
         specs: {
-          "Brand / Category": product.category,
-          "Condition": product.type === 'rent' ? "Pristine / Inspected" : "Brand New (Sealed)",
-          "Warranty": product.type === 'buy' ? "1 Year Manufacturer Warranty" : "Rental Coverage Included",
-          "Availability": product.stock > 0 ? "In Stock" : (product.comingSoon ? "Coming Soon" : "Out of Stock")
-        }
+  "Brand Category": product.category, // <-- Slash (/) hata diya hai
+  "Condition": product.type === 'rent' ? "Pristine / Inspected" : "Brand New (Sealed)",
+  "Warranty": product.type === 'buy' ? "1 Year Manufacturer Warranty" : "Rental Coverage Included",
+  "Availability": product.stock > 0 ? "In Stock" : (product.comingSoon ? "Coming Soon" : "Out of Stock")
+}
       }
     ];
   }
