@@ -577,9 +577,22 @@ function ProductDetail({ addToCart, addToWishlist, isPremium }) {
 
             {product.type === 'buy' ? (
               <>
-                <button disabled={isOutOfStock || isComingSoon} onClick={() => addToCart({ ...product, title: activeStyle.title, finalPrice: dealAccepted ? negotiatedPrice : finalPrice, selectedStyle, selectedRam: selectedRam?.name, selectedStorage: selectedStorage?.name })} className="amazon-btn" style={{ width: '100%', backgroundColor: (isOutOfStock || isComingSoon) ? '#ccc' : '#ffd814', color: '#111', border: (isOutOfStock || isComingSoon) ? 'none' : '1px solid #fcd200', padding: '10px', fontWeight: 'bold', borderRadius: '8px', cursor: (isOutOfStock || isComingSoon) ? 'not-allowed' : 'pointer', marginBottom: '10px' }}>
-                  {isOutOfStock ? 'Out of Stock' : (isComingSoon ? 'Coming Soon' : 'Add to Cart')}
-                </button>
+                <button 
+  disabled={isOutOfStock || isComingSoon} 
+  onClick={() => addToCart({ 
+    ...product, 
+    title: activeStyle.title, 
+    finalPrice: dealAccepted ? negotiatedPrice : finalPrice, 
+    selectedStyle: selectedStyle || null, 
+    selectedRam: selectedRam?.name || null,        // <--- Yahan undefined hatakar null kar diya
+    selectedStorage: selectedStorage?.name || null, // <--- Yahan bhi
+    selectedSize: selectedSize || null             // <--- Yahan bhi
+  })} 
+  className="amazon-btn" 
+  style={{ width: '100%', backgroundColor: (isOutOfStock || isComingSoon) ? '#ccc' : '#ffd814', color: '#111', border: (isOutOfStock || isComingSoon) ? 'none' : '1px solid #fcd200', padding: '10px', fontWeight: 'bold', borderRadius: '8px', cursor: (isOutOfStock || isComingSoon) ? 'not-allowed' : 'pointer', marginBottom: '10px' }}
+>
+  {isOutOfStock ? 'Out of Stock' : (isComingSoon ? 'Coming Soon' : 'Add to Cart')}
+</button>
                 <button disabled={isOutOfStock || isComingSoon} onClick={handleBuyNowClick} className="amazon-btn" style={{ width: '100%', backgroundColor: (isOutOfStock || isComingSoon) ? '#aaa' : '#ffa41c', color: '#111', border: (isOutOfStock || isComingSoon) ? 'none' : '1px solid #ff8f00', padding: '10px', fontWeight: 'bold', borderRadius: '8px', cursor: (isOutOfStock || isComingSoon) ? 'not-allowed' : 'pointer', marginBottom: '10px' }}>
                   Buy Now
                 </button>
